@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 class CartPoleSolver():
     
-    def __init__(self, gamma=0.98, epsilon=0.9, alpha=0.1, episodes=10000, batch_size=2000, interval_num=100):
+    def __init__(self, gamma=0.98, epsilon=0.05, alpha=0.25, episodes=2000, batch_size=1000, interval_num=99):
         self.env = MyEnv()
         self.gamma = gamma # 折扣因子
         self.epsilon = epsilon # 贪婪策略参数
@@ -17,7 +17,8 @@ class CartPoleSolver():
         self.pa_bin = np.linspace(-math.pi, math.pi, interval_num+1)[1: -1]
         self.pv_bin = np.linspace(-math.pi*15, math.pi*15, interval_num+1)[1: -1]
 
-        self.q_table = np.random.uniform(low=0, high=1, size=(interval_num**2, 3))
+        # self.q_table = np.random.uniform(low=0, high=1, size=(interval_num**2, 3))
+        self.q_table = np.zeros((interval_num**2, 3), dtype= np.float64)
         
     def get_state_index(self, observation):
         pole_angle, pole_v = observation
@@ -47,12 +48,12 @@ class CartPoleSolver():
         return action
     def run(self, episode=1000, quiet=True):
         observation = self.env.reset()
-        epsilon = self.epsilon * (1 / (episode + 1))
+        # epsilon = self.epsilon * (1 / (episode + 1))
         for t in range(self.batch_size):
             if not quiet:
                 self.env.render()
                 print(observation)
-            action = self.decide_action(observation, epsilon)
+            action = self.decide_action(observation, self.epsilon)
             next_observation, reward, _, _ = self.env.step(action)
             self.update_Q_table(observation, action, reward, next_observation)
             observation = next_observation

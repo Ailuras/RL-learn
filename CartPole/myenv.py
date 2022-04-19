@@ -1,28 +1,18 @@
-"""
-Classic cart-pole system implemented by Rich Sutton et al.
-Copied from http://incompleteideas.net/sutton/book/code/pole.c
-permalink: https://perma.cc/C9ZM-652R
-"""
+from ast import Mod
 import math
 from typing import Optional, Union
-
 import numpy as np
 import pygame
 from pygame import gfxdraw
-
 import gym
 from gym import spaces, logger
 from gym.utils import seeding
-
 
 class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     """
     新的环境状态仅包含角度[-pi, pi]和角速度[-15pi, 15pi]
     动作包含-3v, 0, 3v
     """
-
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 50}
-
     def __init__(self):
         self.g = 9.81
         self.m = 0.055
@@ -32,7 +22,7 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.K = 0.0536
         self.R = 9.5
         self.T_s = 0.005
-        self.umap = {0:-3, 1:0, 1:3}
+        self.umap = {0:-3, 1:0, 2:3}
         self.R_rew = 1
         self.Q_rew1 = 5
         self.Q_rew2 = 0.1
@@ -56,20 +46,19 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.steps_beyond_done = None
 
     def step(self, action):
-        err_msg = f"{action!r} ({type(action)}) invalid"
-        assert self.action_space.contains(action), err_msg
-        assert self.state is not None, "Call reset before using step method."
-        
         theta, theta_v = self.state
         u = self.umap[action]
         
         temp = 1/self.J * (self.m*self.g*self.l*math.sin(theta) - self.b*theta_v - self.K**2/self.R*theta_v + self.K/self.R*u)
         theta_new = theta + self.T_s*theta_v
         theta_v_new = theta_v + self.T_s*temp
-
+        if theta_new > math.pi:
+            theta_new -= math.pi*2
+        elif theta_new < -math.pi:
+            theta_new += math.pi*2
         self.state = (theta_new, theta_v_new)
         done = False
-        reward = -self.Q_rew1*theta_new**2 - self.Q_rew2*theta_v_new**2 + self.R_rew*u**2
+        reward = -self.Q_rew1*theta_new**2 - self.Q_rew2*theta_v_new**2 - self.R_rew*u**2
 
         return np.array(self.state, dtype=np.float32), reward, done, {}
 
@@ -82,19 +71,20 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
     ):
         super().reset(seed=seed)
         self.state = (math.pi, 0)
+        # self.state = (0, 0)
         if not return_info:
             return np.array(self.state, dtype=np.float32)
         else:
             return np.array(self.state, dtype=np.float32), {}
 
-    def render(self, mode="human"):
+    def render(self):
         screen_width = 600
         screen_height = 400
 
-        world_width = self.x_threshold * 2
+        world_width = 4.8
         scale = screen_width / world_width
         polewidth = 10.0
-        polelen = scale * (2 * self.length)
+        polelen = scale
         cartwidth = 50.0
         cartheight = 30.0
 
@@ -115,8 +105,8 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         l, r, t, b = -cartwidth / 2, cartwidth / 2, cartheight / 2, -cartheight / 2
         axleoffset = cartheight / 4.0
-        cartx = x[0] * scale + screen_width / 2.0  # MIDDLE OF CART
-        carty = 100  # TOP OF CART
+        cartx = screen_width / 2.0
+        carty = 150
         cart_coords = [(l, b), (l, t), (r, t), (r, b)]
         cart_coords = [(c[0] + cartx, c[1] + carty) for c in cart_coords]
         gfxdraw.aapolygon(self.surf, cart_coords, (0, 0, 0))
@@ -131,7 +121,7 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         pole_coords = []
         for coord in [(l, b), (l, t), (r, t), (r, b)]:
-            coord = pygame.math.Vector2(coord).rotate_rad(-x[2])
+            coord = pygame.math.Vector2(coord).rotate_rad(-x[0])
             coord = (coord[0] + cartx, coord[1] + carty + axleoffset)
             pole_coords.append(coord)
         gfxdraw.aapolygon(self.surf, pole_coords, (202, 152, 101))
@@ -153,20 +143,12 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         )
 
         gfxdraw.hline(self.surf, 0, screen_width, carty, (0, 0, 0))
-
         self.surf = pygame.transform.flip(self.surf, False, True)
         self.screen.blit(self.surf, (0, 0))
-        if mode == "human":
-            pygame.event.pump()
-            self.clock.tick(self.metadata["render_fps"])
-            pygame.display.flip()
-
-        if mode == "rgb_array":
-            return np.transpose(
-                np.array(pygame.surfarray.pixels3d(self.screen)), axes=(1, 0, 2)
-            )
-        else:
-            return self.isopen
+        
+        pygame.event.pump()
+        self.clock.tick(50)
+        pygame.display.flip()
 
     def close(self):
         if self.screen is not None:

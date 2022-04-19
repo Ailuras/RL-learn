@@ -51,7 +51,7 @@ class CartPoleSolver():
         for t in range(self.batch_size):
             if not quiet:
                 self.env.render()
-                # print(observation)
+                print(observation)
             action = self.decide_action(observation, epsilon)
             next_observation, reward, _, _ = self.env.step(action)
             self.update_Q_table(observation, action, reward, next_observation)

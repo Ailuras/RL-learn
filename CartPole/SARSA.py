@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 class CartPoleSolver():
     
-    def __init__(self, gamma=0.98, epsilon=0.05, alpha=0.25, episodes=2000, batch_size=1000, interval_num=99):
+    def __init__(self, gamma=0.98, epsilon=0.99, alpha=0.25, episodes=2000, batch_size=1000, interval_num=100):
         self.env = MyEnv()
         self.gamma = gamma # 折扣因子
         self.epsilon = epsilon # 贪婪策略参数
@@ -29,12 +29,14 @@ class CartPoleSolver():
         
         return state_index
     
-    def update_Q_table(self, observation, action, reward, next_observation):        
+    def update_Q_table(self, observation, action, reward, next_observation, epsilon):        
         state_index = self.get_state_index(observation)
         next_state_index = self.get_state_index(next_observation)
         
-        maxQ = max(self.q_table[next_state_index][:])
-        self.q_table[state_index, action] = self.q_table[state_index, action] + self.alpha * (reward + self.gamma*maxQ - self.q_table[state_index, action])
+        # max_next = max(self.q_table[next_state_index][:])
+        a_next = self.decide_action(next_observation, epsilon)
+        q_target = reward + self.gamma * self.q_table[next_state_index, a_next]
+        self.q_table[state_index, action] = self.q_table[state_index, action] + self.alpha * (q_target - self.q_table[state_index, action])
         
     def decide_action(self, observation, epsilon):
         
@@ -46,21 +48,24 @@ class CartPoleSolver():
             action = np.random.choice(3)
             
         return action
-    def run(self, episode=1000, quiet=True):
+    def run(self, epsilon=0.1, quiet=True):
         observation = self.env.reset()
         # epsilon = self.epsilon * (1 / (episode + 1))
         for t in range(self.batch_size):
             if not quiet:
                 self.env.render()
-                print(observation)
-            action = self.decide_action(observation, self.epsilon)
+                # print(observation)
+            # action = self.decide_action(observation, self.epsilon)
+            action = self.decide_action(observation, epsilon)
             next_observation, reward, _, _ = self.env.step(action)
-            self.update_Q_table(observation, action, reward, next_observation)
+            self.update_Q_table(observation, action, reward, next_observation, epsilon)
             observation = next_observation
     
     def solve(self):
-        for episode in tqdm(range(self.episodes)):
-            self.run(episode)
+        epsilon = self.epsilon
+        for _ in tqdm(range(self.episodes)):
+            epsilon *= self.epsilon
+            self.run(epsilon)
             
     def get_Q_table(self):
         for i in range(3):

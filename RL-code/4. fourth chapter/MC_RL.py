@@ -72,7 +72,7 @@ class MC_RL:
                 print("同策略第一次完成任务需要的次数：", iter1)
                 break
             #从样本中计算累计回报,g(s_0) = r_0+gamma*r_1+gamma^2*r_2+gamma^3*r3+v(sT)
-            a = self.epsilon_greedy_policy(self.qvalue, s,epsilon)
+            a = self.epsilon_greedy_policy(self.qvalue, s, epsilon)
             g = self.qvalue[s, self.find_anum(a)]
             #计算该序列的第一状态的累计回报
             for i in range(len(s_sample)-1, -1, -1):
@@ -85,8 +85,7 @@ class MC_RL:
                 #计算状态-行为对（s,a)的次数，s,a1...s,a2
                 self.n[s_sample[i], a_sample[i]] += 1.0
                 #利用增量式方法更新值函数
-                self.qvalue[s_sample[i], a_sample[i]] = (self.qvalue[s_sample[i], a_sample[i]] * (self.n[s_sample[i],a_sample[i]]-1)+g) 
-                                                            / self.n[s_sample[i], a_sample[i]]
+                self.qvalue[s_sample[i], a_sample[i]] = (self.qvalue[s_sample[i], a_sample[i]] * (self.n[s_sample[i],a_sample[i]]-1)+g) / self.n[s_sample[i], a_sample[i]]
                 g -= r_sample[i]
                 g /= self.gamma
                 # print("s_sample,a",g)

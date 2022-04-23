@@ -42,10 +42,8 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
         self.clock = None
         self.isopen = True
         self.state = None
-        
-        self.steps_beyond_done = None
 
-    def step(self, action):
+    def step(self, action, method):
         theta, theta_v = self.state
         u = self.umap[action]
         
@@ -58,7 +56,14 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
             theta_new += math.pi*2
         self.state = (theta_new, theta_v_new)
         done = False
-        reward = -self.Q_rew1*theta_new**2 - self.Q_rew2*theta_v_new**2 - self.R_rew*u**2
+        if method == 0:
+            reward = -self.Q_rew1*theta_new**2 - self.Q_rew2*theta_v_new**2 - self.R_rew*u**2
+        else:
+            theta_unit = math.pi*2/method
+            theta_v_unit = math.pi*30/method
+            theta_r = (int((theta_new+math.pi)/theta_unit) + 1/2) * theta_unit - math.pi
+            theta_v_r = (int((theta_v_new+math.pi*15)/theta_v_unit) + 1/2) * theta_v_unit - math.pi*15
+            reward = -self.Q_rew1*theta_r**2 - self.Q_rew2*theta_v_r**2 - self.R_rew*u**2
 
         return np.array(self.state, dtype=np.float32), reward, done, {}
 

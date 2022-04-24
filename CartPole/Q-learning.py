@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class CartPoleSolver():
     
-    def __init__(self, gamma=0.98, epsilon=0.5, alpha=0.01, episodes=2000, batch_size=1000, interval_num=20, error=1e-1):
+    def __init__(self, gamma=0.98, epsilon=1, alpha=0.25, episodes=2000, batch_size=1000, interval_num=100, error=1e-1):
         self.env = MyEnv()
         self.gamma = gamma # 折扣因子
         self.epsilon = epsilon # 贪婪策略参数
@@ -22,6 +22,7 @@ class CartPoleSolver():
 
         # self.q_table = np.random.uniform(low=0, high=1, size=(interval_num**2, 3))
         self.q_table = np.zeros((interval_num**2, 3), dtype= np.float64)
+        self.trail = np.zeros((interval_num**2, 3), dtype= np.float64)
         
     def get_state_index(self, observation):
         pole_angle, pole_v = observation
@@ -59,7 +60,7 @@ class CartPoleSolver():
                 # print(observation)
             # action = self.decide_action(observation, self.epsilon)
             action = self.decide_action(observation, epsilon)
-            next_observation, reward, _, _ = self.env.step(action, self.interval_num)
+            next_observation, reward, _, _ = self.env.step(action, 0)
             self.update_Q_table(observation, action, reward, next_observation)
             observation = next_observation
     
@@ -139,11 +140,10 @@ class CartPoleSolver():
         action = np.maximum(action, q3).reshape(self.interval_num, -1)
         plt.matshow(action, cmap='rainbow')
         plt.show()
-
     
 a = CartPoleSolver()
 a.solve()
 a.run(quiet=False)
 a.plot_error()
-a.plot_action_of_state()
-a.plot_Q_table()
+# a.plot_action_of_state()
+# a.plot_Q_table()

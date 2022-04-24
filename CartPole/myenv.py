@@ -67,6 +67,9 @@ class MyEnv(gym.Env[np.ndarray, Union[int, np.ndarray]]):
 
         return np.array(self.state, dtype=np.float32), reward, done, {}
 
+    def test(self):
+        pass
+    
     def reset(
         self,
         *,
